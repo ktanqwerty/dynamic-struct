@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-playground/form"
 	"github.com/leebenson/conform"
-	"github.com/ompluscator/dynamic-struct"
+	"github.com/ktanqwerty/dynamic-struct"
 )
 
 func getReaderWithNewStructForFormExample() interface{} {

@@ -1,6 +1,8 @@
 package dynamicstruct
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type (
 	// Builder holds all fields' definitions for desired structs.
@@ -75,6 +77,8 @@ type (
 		//
 		NewSliceOfStructs() interface{}
 
+		NewSliceOfStructsWithCapacity(capacity int) []interface{}
+
 		// New provides new map of defined dynamic struct with desired key type.
 		//
 		// value := dStruct.NewMapOfStructs("")
@@ -87,11 +91,9 @@ type (
 	}
 
 	fieldConfigImpl struct {
-		name      string
-		pkg       string
-		typ       interface{}
-		tag       string
-		anonymous bool
+		name string
+		typ  interface{}
+		tag  string
 	}
 
 	dynamicStructImpl struct {
@@ -103,7 +105,6 @@ type (
 // for defining fresh dynamic struct.
 //
 // builder := dynamicstruct.NewStruct()
-//
 func NewStruct() Builder {
 	return &builderImpl{
 		fields: []*fieldConfigImpl{},
@@ -114,7 +115,6 @@ func NewStruct() Builder {
 // returns new instance of Builder interface.
 //
 // builder := dynamicstruct.MergeStructs(MyStruct{})
-//
 func ExtendStruct(value interface{}) Builder {
 	return MergeStructs(value)
 }
@@ -123,7 +123,6 @@ func ExtendStruct(value interface{}) Builder {
 // returns new instance of Builder interface.
 //
 // builder := dynamicstruct.MergeStructs(MyStructOne{}, MyStructTwo{}, MyStructThree{})
-//
 func MergeStructs(values ...interface{}) Builder {
 	builder := NewStruct()
 
@@ -134,7 +133,7 @@ func MergeStructs(values ...interface{}) Builder {
 		for i := 0; i < valueOf.NumField(); i++ {
 			fval := valueOf.Field(i)
 			ftyp := typeOf.Field(i)
-			builder.(*builderImpl).addField(ftyp.Name, ftyp.PkgPath, fval.Interface(), string(ftyp.Tag), ftyp.Anonymous)
+			builder.AddField(ftyp.Name, fval.Interface(), string(ftyp.Tag))
 		}
 	}
 
@@ -142,15 +141,10 @@ func MergeStructs(values ...interface{}) Builder {
 }
 
 func (b *builderImpl) AddField(name string, typ interface{}, tag string) Builder {
-	return b.addField(name, "", typ, tag, false)
-}
-
-func (b *builderImpl) addField(name string, pkg string, typ interface{}, tag string, anonymous bool) Builder {
 	b.fields = append(b.fields, &fieldConfigImpl{
-		name:      name,
-		typ:       typ,
-		tag:       tag,
-		anonymous: anonymous,
+		name: name,
+		typ:  typ,
+		tag:  tag,
 	})
 
 	return b
@@ -189,11 +183,9 @@ func (b *builderImpl) Build() DynamicStruct {
 
 	for _, field := range b.fields {
 		structFields = append(structFields, reflect.StructField{
-			Name:      field.name,
-			PkgPath:   field.pkg,
-			Type:      reflect.TypeOf(field.typ),
-			Tag:       reflect.StructTag(field.tag),
-			Anonymous: field.anonymous,
+			Name: field.name,
+			Type: reflect.TypeOf(field.typ),
+			Tag:  reflect.StructTag(field.tag),
 		})
 	}
 
@@ -218,6 +210,15 @@ func (ds *dynamicStructImpl) New() interface{} {
 
 func (ds *dynamicStructImpl) NewSliceOfStructs() interface{} {
 	return reflect.New(reflect.SliceOf(ds.definition)).Interface()
+}
+
+func (ds *dynamicStructImpl) NewSliceOfStructsWithCapacity(capacity int) []interface{} {
+	slice := reflect.MakeSlice(reflect.SliceOf(ds.definition), capacity, capacity	)
+	result := make([]interface{}, capacity)
+	for i := 0; i < capacity; i++ {
+		result[i] = slice.Index(i).Addr().Interface()
+	}
+	return result
 }
 
 func (ds *dynamicStructImpl) NewMapOfStructs(key interface{}) interface{} {
