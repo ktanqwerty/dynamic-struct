@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ompluscator/dynamic-struct"
+	"github.com/ktanqwerty/dynamic-struct"
 )
 
 func getReaderWithNewStructForJsonExample() interface{} {
